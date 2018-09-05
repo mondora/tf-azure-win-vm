@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "netrg" {
-  name     = "${var.environment}-${var.region}-vnet-rg"
+  name     = "${var.service}-${var.environment}-${var.region}-vnet-rg"
   location = "${var.region}"
   tags {
     service = "${var.service}"
@@ -7,7 +7,7 @@ resource "azurerm_resource_group" "netrg" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.environment}-${var.region}-vnet"
+  name                = "${var.service}-${var.environment}-${var.region}-vnet"
   location            = "${var.region}"
   address_space       = ["${var.address_space}"]
   resource_group_name = "${azurerm_resource_group.netrg.name}"
@@ -18,8 +18,8 @@ resource "azurerm_virtual_network" "vnet" {
   }
 }
 
-resource "azurerm_subnet" "apgw-subnet" {
-  name                 = "${var.service}-${var.region}-apgw-subnet"
+resource "azurerm_subnet" "lb-subnet" {
+  name                 = "${var.service}-${var.service}-${var.region}-lb-subnet"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   resource_group_name  = "${azurerm_resource_group.netrg.name}"
   address_prefix       = "${var.lb_subnet}"
@@ -27,7 +27,7 @@ resource "azurerm_subnet" "apgw-subnet" {
 }
 
 resource "azurerm_subnet" "vm-subnet" {
-  name                 = "${var.service}-${var.environment}-${var.region}-vm-subnet"
+  name                 = "${var.service}-${var.service}-${var.environment}-${var.region}-vm-subnet"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   resource_group_name  = "${azurerm_resource_group.netrg.name}"
   address_prefix       = "${var.vm_subnet}"

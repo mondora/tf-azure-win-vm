@@ -26,4 +26,6 @@ variable "hostname" {}
 
 variable "admin_username" {}
 
-variable "key_data" {}
+variable "admin_password" {}
+
+variable "service" {}

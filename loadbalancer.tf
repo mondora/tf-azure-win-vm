@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "lbrg" {
-  name       = "${var.environment}-${var.region}-lb-rg"
+  name       = "${var.service}-${var.environment}-${var.region}-lb-rg"
   location   = "${var.region}"
   depends_on = ["azurerm_virtual_network.vnet"]
 
@@ -9,7 +9,7 @@ resource "azurerm_resource_group" "lbrg" {
 }
 
 resource "azurerm_public_ip" "lbpip" {
-  name                         = "${var.environment}-${var.region}-ip"
+  name                         = "${var.service}-${var.environment}-${var.region}-ip"
   location                     = "${var.region}"
   resource_group_name          = "${azurerm_resource_group.lbrg.name}"
   public_ip_address_allocation = "static"
@@ -22,7 +22,7 @@ resource "azurerm_public_ip" "lbpip" {
 }
 
 resource "azurerm_lb" "lb" {
-  name                = "${var.environment}-${var.region}-lb"
+  name                = "${var.service}-${var.environment}-${var.region}-lb"
   location            = "${var.region}"
   resource_group_name = "${azurerm_resource_group.lbrg.name}"
   depends_on          = ["azurerm_public_ip.lbpip"]

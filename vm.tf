@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "vmrg" {
-  name       = "${var.environment}-${var.region}-vm-rg"
+  name       = "${var.service}-${var.environment}-${var.region}-vm-rg"
   location   = "${var.region}"
   depends_on = ["azurerm_subnet.vm-subnet"]
 
@@ -9,7 +9,7 @@ resource "azurerm_resource_group" "vmrg" {
 }
 
 resource "azurerm_storage_account" "storage" {
-  name                     = "${var.environment}${var.region}stor"
+  name                     = "${var.service}${var.environment}stor"
   location                 = "${var.region}"
   resource_group_name      = "${azurerm_resource_group.vmrg.name}"
   account_tier             = "${var.storage_account_tier}"
@@ -22,11 +22,11 @@ resource "azurerm_storage_account" "storage" {
 }
 
 resource "azurerm_availability_set" "avset" {
-  name                         = "${var.environment}${var.region}avset"
+  name                         = "${var.service}-${var.environment}${var.region}avset"
   location                     = "${var.region}"
   resource_group_name          = "${azurerm_resource_group.vmrg.name}"
-  platform_fault_domain_count  = 2
-  platform_update_domain_count = 2
+  platform_fault_domain_count  = 3
+  platform_update_domain_count = 5
   managed                      = true
   depends_on                   = ["azurerm_resource_group.vmrg"]
 
@@ -40,7 +40,7 @@ resource "azurerm_network_interface" "nic" {
   location            = "${var.region}"
   resource_group_name = "${azurerm_resource_group.vmrg.name}"
   count               = 2
-  depends_on          = ["azurerm_resource_group.vmrg", "azurerm_lb_rule.lb-rule", "azurerm_lb_nat_rule.nat"]
+  depends_on          = ["azurerm_resource_group.vmrg", "azurerm_lb_rule.HTTP-lb-rule", "azurerm_lb_nat_rule.nat"]
 
   ip_configuration {
     name                                    = "ipconfig${count.index}"
@@ -56,7 +56,7 @@ resource "azurerm_network_interface" "nic" {
 }
 
 resource "azurerm_managed_disk" "datadisk" {
-  name                 = "${var.environment}-${var.region}-datadisk-${count.index}"
+  name                 = "${var.service}-${var.environment}-${var.region}-datadisk-${count.index}"
   location             = "${var.region}"
   resource_group_name  = "${azurerm_resource_group.vmrg.name}"
   storage_account_type = "Standard_LRS"
@@ -67,7 +67,7 @@ resource "azurerm_managed_disk" "datadisk" {
 }
 
 resource "azurerm_virtual_machine" "vm" {
-  name                  = "${var.environment}-${var.region}-vm-${count.index}"
+  name                  = "${var.service}-${var.environment}-${var.region}-vm-${count.index}"
   location              = "${var.region}"
   resource_group_name   = "${azurerm_resource_group.vmrg.name}"
   count                 = 2
@@ -84,34 +84,28 @@ resource "azurerm_virtual_machine" "vm" {
   }
 
   storage_os_disk {
-    name              = "${var.environment}-${var.region}-osdisk-${count.index}"
+    name              = "${var.service}-${var.environment}-${var.region}-osdisk-${count.index}"
     managed_disk_type = "Standard_LRS"
     caching           = "ReadWrite"
     create_option     = "FromImage"
   }
 
   storage_data_disk {
-    name              = "${var.environment}-${var.region}-datadisk-${count.index}"
+    name              = "${var.service}-${var.environment}-${var.region}-datadisk-${count.index}"
     managed_disk_id   = "${element(azurerm_managed_disk.datadisk.*.id, count.index)}"
     managed_disk_type = "Standard_LRS"
-    disk_size_gb      = "30"
+    disk_size_gb      = "80"
     create_option     = "Attach"
     lun               = 0
   }
 
   os_profile {
-    computer_name  = "${var.hostname}"
+    computer_name  = "${var.hostname}${count.index}"
     admin_username = "${var.admin_username}"
+    admin_password = "${var.admin_password}"  
   }
 
-  os_profile_linux_config {
-    disable_password_authentication = true
-
-    ssh_keys {
-      key_data = "${var.key_data}"
-      path     = "/home/${var.admin_username}/.ssh/authorized_keys"
-    }
-  }
+  os_profile_windows_config {}
 
   boot_diagnostics {
     enabled     = true
